@@ -31,14 +31,14 @@ class OrderBook:
             if order.quantity > 0:
                 self._add_to_book(order)
         elif order.type == OrderType.IOC:
-          await self._match_limit(order)
+            await self._match_limit(order)
           # Don't add remaining to book (cancel remainder)
 
         elif order.type == OrderType.FOK:
            if self._can_fully_match(order):
-            await self._match_limit(order)
+             await self._match_limit(order)
            else:
-            logger.info(f"FOK order not filled and canceled: {order.id}")
+             logger.info(f"FOK order not filled and canceled: {order.id}")
         await self._update_bbo() 
 
     def _add_to_book(self, order: Order):
@@ -94,8 +94,7 @@ class OrderBook:
                 del contra_book[best_price]
 
     async def _record_trade(self, incoming: Order, existing: OrderBookEntry, price: float, qty: float):
-        buy_id = incoming.id if incoming.side == Side.BUY else existing.order_id
-        sell_id = incoming.id if incoming.side == Side.SELL else existing.order_id
+
         maker_id = existing.order_id
         taker_id = incoming.id
         aggressor_side = incoming.side.value  # "buy" or "sell"
@@ -104,8 +103,7 @@ class OrderBook:
             symbol=self.symbol,
             price=price,
             quantity=qty,
-            buy_order_id=buy_id,
-            sell_order_id=sell_id,
+
             maker_id=maker_id,
             taker_id=taker_id,
             aggressor_side=aggressor_side
@@ -177,15 +175,19 @@ class OrderBook:
             except:
                 self.trade_clients.remove(ws)
     def _can_fully_match(self, order: Order) -> bool:
-        book = self.asks if order.side == Side.BUY else self.bids
+        contra_book = self.asks if order.side == Side.BUY else self.bids
         total = 0.0
 
-        for price, queue in book.items():
+        for price, queue in contra_book.items():
+            # Check price constraint (respecting limit for FOK)
             if (order.side == Side.BUY and price > order.price) or \
             (order.side == Side.SELL and price < order.price):
                 break
+
             for entry in queue:
                 total += entry.quantity
                 if total >= order.quantity:
                     return True
         return False
+    
+    
