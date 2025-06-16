@@ -1,19 +1,24 @@
-from fastapi import FastAPI,WebSocket
+from fastapi import FastAPI,WebSocket, WebSocketDisconnect
 from src.models.order import Order
 from src.services.order_book import OrderBook
 from fastapi.responses import HTMLResponse
-import asyncio
+from fastapi import HTTPException
+
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app = FastAPI()
 clients = {
     "market": [],
     "trades": []
 }
-book = OrderBook(
-    market_clients=clients["market"],
-    trade_clients=clients["trades"]
-)
 
-
+books = {}  # Dictionary to hold multiple OrderBooks by symbol
+def get_or_create_book(symbol: str) -> OrderBook:
+    if symbol not in books:
+        books[symbol] = OrderBook(symbol,clients["market"], clients["trades"])
+    return books[symbol]
 
 
 
@@ -23,52 +28,46 @@ def read_root():
 
 @app.post("/submit_order")
 async def submit_order(order: Order):
-    book.add_order(order)
-    return {"bbo": book.get_bbo()}
+    try:
+        book = get_or_create_book(order.symbol)
+        await book.add_order(order)
+        return {"bbo": book.get_bbo()}
+    except Exception as e:
+        logger.error(f"Order submission failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
-
-@app.get("/bbo")
-def get_bbo():
+@app.get("/bbo/{symbol}")
+def get_bbo(symbol: str):
+    book = get_or_create_book(symbol)
     return book.get_bbo()
-@app.get("/orders")
-def get_orders():
-    return {
-        "bids": _format_book(book.bids),
-        "asks": _format_book(book.asks)
-    }
 
-def _format_book(book_side):
-    return [
-        {
-            "price": price,
-            "orders": [
-                {
-                    "order_id": entry.order_id,
-                    "quantity": entry.quantity,
-                    "timestamp": entry.timestamp
-                }
-                for entry in queue
-            ]
-        }
-        for price, queue in book_side.items()
-    ]
-
-@app.websocket("/ws/market")
-async def market_data_stream(websocket: WebSocket):
+@app.websocket("/ws/market/{symbol}")
+async def market_data_stream(websocket: WebSocket, symbol: str):
     await websocket.accept()
-    book.market_clients.append(websocket)  # update the OrderBook directly
+    book = get_or_create_book(symbol)
+    book.market_clients.append(websocket)
+    logger.info(f"[WebSocket] Market client connected for symbol: {symbol}")
+    logger.info(f"[WebSocket] Total market_clients: {len(book.market_clients)}")
+
     try:
         while True:
             await websocket.receive_text()
-    except:
+    except WebSocketDisconnect:
         book.market_clients.remove(websocket)
+        logger.info(f"[WebSocket] Market client disconnected for {symbol}")
 
-@app.websocket("/ws/trades")
-async def trade_feed_stream(websocket: WebSocket):
+@app.websocket("/ws/trades/{symbol}")
+async def trade_feed_stream(websocket: WebSocket, symbol: str):
     await websocket.accept()
+    book = get_or_create_book(symbol)
     book.trade_clients.append(websocket)
+    logger.info(f"[WebSocket] Trade client connected for symbol: {symbol}")
+    logger.info(f"[WebSocket] Total trade_clients: {len(book.trade_clients)}")
+
     try:
         while True:
             await websocket.receive_text()
-    except:
+    except WebSocketDisconnect:
         book.trade_clients.remove(websocket)
+        logger.info(f"[WebSocket] Trade client disconnected for {symbol}")
+

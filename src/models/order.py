@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from uuid import uuid4
 from enum import Enum
-from datetime import datetime
+from datetime import datetime,timezone
 
 
 class Side(str, Enum):
@@ -17,7 +17,7 @@ class OrderType(str, Enum):
 
 class Order(BaseModel):
     id: str = str(uuid4())
-    timestamp: datetime = datetime.utcnow()
+    timestamp: datetime = datetime.now(timezone.utc)
     symbol: str
     side: Side
     type: OrderType
