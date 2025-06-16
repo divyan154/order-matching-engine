@@ -1,12 +1,14 @@
 from pydantic import BaseModel
+from uuid import UUID, uuid4
 from datetime import datetime
-from uuid import uuid4
-
 
 class Trade(BaseModel):
-    id: str = str(uuid4())
+    id: UUID = uuid4()
     timestamp: datetime = datetime.utcnow()
     price: float
     quantity: float
-    buy_order_id: str
-    sell_order_id: str
+    buy_order_id: UUID
+    sell_order_id: UUID
+    maker_id: UUID
+    taker_id: UUID
+    aggressor_side: str  # "buy" or "sell"

@@ -12,7 +12,8 @@ class Side(str, Enum):
 class OrderType(str, Enum):
     LIMIT = "limit"
     MARKET = "market"
-
+    IOC='ioc' # Immediate or Cancel (partial fill allowed, rest cancelled)
+    FOK='fok' # Fill or Kill (must be fully filled, otherwise cancelled)
 
 class Order(BaseModel):
     id: str = str(uuid4())
