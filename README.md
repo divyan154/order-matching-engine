@@ -161,3 +161,110 @@ uvicorn src.main:app --reload
 3. Connect WebSocket client (e.g., websocat)
 
 websocat ws://localhost:8000/ws/market/symbol
+
+
+
+
+
+⚡ High-Level Overview of OrderBook Service
+1. Purpose
+
+The OrderBook class manages the buy and sell orders for a trading symbol (like BTC/USDT).
+
+It matches incoming orders (market, limit, IOC, FOK).
+
+Executes trades when conditions are met.
+
+Broadcasts updates (market depth & trades) to WebSocket clients in real time.
+
+2. Core Data Structures
+
+bids (SortedDict with negative key function) → keeps buy orders sorted descending by price.
+
+asks (SortedDict) → keeps sell orders sorted ascending by price.
+
+deque (per price level) → maintains FIFO (first-in-first-out) order for fairness among same-price orders.
+
+trades list → stores executed trades.
+
+✅ This structure ensures O(log n) inserts/removals and O(1) access to best prices.
+
+3. Order Handling
+
+The engine supports 4 types of orders:
+
+Market Order
+
+Executes immediately at best available price.
+
+Doesn’t rest on the book.
+
+Limit Order
+
+Executes against best opposing orders if possible.
+
+Any unfilled quantity is added to the order book.
+
+IOC (Immediate-or-Cancel)
+
+Matches like a limit order.
+
+Any leftover (unfilled) quantity is cancelled, not added to the book.
+
+FOK (Fill-or-Kill)
+
+Only executes if the entire order can be filled immediately.
+
+Otherwise, it is cancelled entirely.
+
+4. Trade Execution Flow
+
+Add Order (add_order)
+
+Routes to _match_market, _match_limit, or _can_fully_match.
+
+Matches orders until filled or no more liquidity.
+
+Records trades via _record_trade.
+
+Record Trade (_record_trade)
+
+Creates a Trade object (price, qty, maker/taker IDs, side).
+
+Appends to trade history.
+
+Broadcasts trade to trade_clients over WebSocket.
+
+Maintain Book (_add_to_book)
+
+If order not fully filled, adds remaining quantity to bids/asks.
+
+Stored under the price level with FIFO queue (deque).
+
+5. Market Data Broadcasting
+
+Order Book Depth (broadcast_market_depth)
+
+Builds top-N snapshot (bids/asks up to depth=10).
+
+Sends JSON updates over WebSocket to subscribed market clients.
+
+Trades (broadcast_trade)
+
+Broadcasts trade execution events in real time to trade clients.
+
+✅ This makes the engine usable for real-time trading UIs or IoT clients (which fits Grid OS’s IoT theme).
+
+6. Best Bid/Offer (BBO)
+
+get_bbo() returns best bid (highest buy) and best ask (lowest sell).
+
+Useful for market-making and UI displays.
+
+7. Scalability / Efficiency
+
+Uses SortedDict → ensures order prices are always sorted.
+
+Uses deque → O(1) FIFO execution within price levels.
+
+Async functions (async def) → multiple clients handled concurrently via WebSockets.
