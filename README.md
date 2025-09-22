@@ -1,85 +1,76 @@
-🚀 High-Performance Crypto Order Matching Engine
-A high-performance cryptocurrency matching engine built with FastAPI that supports multiple trading symbols, real-time WebSocket streaming, and various order types (Market, Limit, IOC, FOK).
+# 🚀 High-Performance Crypto Order Matching Engine
 
-🏗️ System Architecture & Design
-Key Components
-FastAPI Server – Exposes HTTP and WebSocket endpoints.
+A **high-performance cryptocurrency order matching engine** built with **FastAPI** that supports:
+- Multiple trading symbols
+- Real-time WebSocket streaming
+- Various order types (Market, Limit, IOC, FOK)
 
-OrderBook Class – Handles core matching logic per trading symbol.
+---
 
-In-Memory Data Structures – Enables low-latency, high-throughput matching.
+## 🏗️ System Architecture & Design
 
-WebSocket Broadcasting – Pushes live market depth and trade data to subscribed clients.
+### 🔑 Key Components
+- **FastAPI Server** → Exposes HTTP and WebSocket endpoints.  
+- **OrderBook Class** → Handles core matching logic per trading symbol.  
+- **In-Memory Data Structures** → Enables low-latency, high-throughput matching.  
+- **WebSocket Broadcasting** → Pushes live market depth and trade data to subscribed clients.  
 
+---
 
+### 🎯 Design Principles
+- **Symbol Isolation** → Each symbol uses its own `OrderBook` instance.  
+- **Async I/O** → All routes use `async def`, allowing concurrent order submission and broadcasting.  
+- **Separation of Concerns** → Models, services, and utils are cleanly organized for maintainability.  
 
+---
 
-Design Principles
-Symbol Isolation: Each symbol uses its own instance of OrderBook.
+## 📦 Data Structures
 
-Async I/O: All routes use async def, allowing concurrent order submission and broadcasting.
+### 1. **SortedDict** (from `sortedcontainers`)
+- Stores price levels sorted by price.  
+- **Buy side** → sorted in descending order (`lambda x: -x`).  
+- **Sell side** → sorted in ascending order.  
+- Enables **fast retrieval of best bid/ask**.  
 
-Separation of Concerns: Models, services, and utils are cleanly organized.
+### 2. **deque** (from `collections`)
+- Queue of orders at each price level.  
+- Maintains **FIFO (First-In-First-Out)** for price-time priority.  
 
+---
 
+## ⚙️ Matching Algorithm
 
+### ✅ Supported Order Types
+| Type   | Behavior |
+|--------|-----------|
+| Market | Match immediately at best price |
+| Limit  | Match up to limit price, queue remainder |
+| IOC    | Match immediately, discard remaining quantity |
+| FOK    | Match fully immediately or cancel |
 
+---
 
-📦 Data Structures
-1. SortedDict (from sortedcontainers)
-Stores price levels sorted by price.
+### 🔁 Matching Flow
+1. Match incoming order against **opposite side of the book**.  
+2. For each price level:  
+   - Match as much quantity as possible.  
+   - Respect **time-priority** using `deque`.  
+3. If quantity remains:  
+   - Add to the book (if order type allows).  
 
-Buy side: sorted in descending order (lambda x: -x)
+---
 
-Sell side: sorted in ascending order.
+## 📡 API Reference
 
-Fast retrieval of the best bid/ask.
+### 🔹 HTTP Endpoints
+| Method | Route             | Description                  |
+|--------|------------------|------------------------------|
+| GET    | `/`              | Welcome message              |
+| POST   | `/submit_order`  | Submit a new order           |
+| GET    | `/bbo/{symbol}`  | Get best bid/ask for symbol  |
 
-2. deque (from collections)
-Queue of orders at each price level.
-
-Maintains FIFO for price-time priority.
-
-
-
-
-⚙️ Matching Algorithm
-✅ Supported Order Types
-Type	Behavior
-Market	Match immediately at best price
-Limit	Match up to limit price, queue remainder
-IOC	Match immediately, discard remaining quantity
-FOK	Match fully immediately or cancel
-
-
-
-🔁 Matching Flow
-Match against opposite side of book.
-
-For each price level:
-
-Match as much quantity as possible.
-
-Respect time-priority using deque.
-
-If quantity remains:
-
-Add to book (if order type allows).
-
-
-
-📡 API Reference
-🔹 HTTP Endpoints
-Method	Route	Description
-GET	/	Welcome message
-POST	/submit_order	Submit a new order
-GET	/bbo/{symbol}	Get best bid/ask for symbol
-
-
-
-Sample POST Payload:
-
-
+**Sample POST Payload**
+```json
 {
   "symbol": "BTCUSDT",
   "type": "limit",
@@ -87,7 +78,6 @@ Sample POST Payload:
   "price": 25000,
   "quantity": 1
 }
-
 
 
 🔹 WebSocket Endpoints
