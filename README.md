@@ -166,105 +166,93 @@ websocat ws://localhost:8000/ws/market/symbol
 
 
 
-⚡ High-Level Overview of OrderBook Service
-1. Purpose
+# ⚡ OrderBook Service – High-Level Overview
 
-The OrderBook class manages the buy and sell orders for a trading symbol (like BTC/USDT).
+## 1. Purpose
+The `OrderBook` class is the **core matching engine component**. It:
 
-It matches incoming orders (market, limit, IOC, FOK).
+- Manages the **buy and sell orders** for a trading symbol (e.g., `BTC/USDT`).
+- Matches incoming orders (`Market`, `Limit`, `IOC`, `FOK`).
+- Executes trades when conditions are met.
+- Broadcasts **market depth** and **trade events** to WebSocket clients in real time.
 
-Executes trades when conditions are met.
+---
 
-Broadcasts updates (market depth & trades) to WebSocket clients in real time.
+## 2. Core Data Structures
+- **`bids`** → `SortedDict` (with negative key function) to keep **buy orders sorted descending by price**.  
+- **`asks`** → `SortedDict` to keep **sell orders sorted ascending by price**.  
+- **`deque` (per price level)** → ensures **FIFO (First-In-First-Out)** execution for fairness among orders at the same price.  
+- **`trades` list** → stores executed trades.
 
-2. Core Data Structures
+✅ This design ensures **O(log n)** inserts/removals and **O(1)** access to best prices.
 
-bids (SortedDict with negative key function) → keeps buy orders sorted descending by price.
+---
 
-asks (SortedDict) → keeps sell orders sorted ascending by price.
+## 3. Order Handling
+The engine supports **four types of orders**:
 
-deque (per price level) → maintains FIFO (first-in-first-out) order for fairness among same-price orders.
+- **Market Order**
+  - Executes immediately at best available price.
+  - Remaining quantity (if liquidity is insufficient) is cancelled.
+  - Market orders never rest on the book.
 
-trades list → stores executed trades.
+- **Limit Order**
+  - Executes against best opposing orders if possible.
+  - Any unfilled quantity is added to the order book.
 
-✅ This structure ensures O(log n) inserts/removals and O(1) access to best prices.
+- **IOC (Immediate-or-Cancel)**
+  - Behaves like a limit order.
+  - Any leftover (unfilled) quantity is **cancelled**, not added to the book.
 
-3. Order Handling
+- **FOK (Fill-or-Kill)**
+  - Executes **only if the entire order can be filled immediately**.
+  - Otherwise, it is cancelled entirely.
 
-The engine supports 4 types of orders:
+---
 
-Market Order
+## 4. Trade Execution Flow
+- **Add Order (`add_order`)**
+  - Routes to `_match_market`, `_match_limit`, or `_can_fully_match`.
+  - Matches until the order is filled or no more liquidity is available.
+  - Records trades via `_record_trade`.
 
-Executes immediately at best available price.
+- **Record Trade (`_record_trade`)**
+  - Creates a `Trade` object (price, qty, maker/taker IDs, aggressor side).
+  - Appends trade to history.
+  - Broadcasts trade to `trade_clients` via WebSocket.
 
-Doesn’t rest on the book.
+- **Maintain Book (`_add_to_book`)**
+  - If order not fully filled, remaining quantity is stored in the order book.
+  - Orders at the same price are kept in FIFO order using `deque`.
 
-Limit Order
+---
 
-Executes against best opposing orders if possible.
+## 5. Market Data Broadcasting
+- **Order Book Depth (`broadcast_market_depth`)**
+  - Builds a top-N snapshot of bids/asks (default depth = 10).
+  - Sends JSON updates over WebSocket to subscribed market clients.
 
-Any unfilled quantity is added to the order book.
+- **Trade Events (`broadcast_trade`)**
+  - Broadcasts trade execution details in real time.
+  - Useful for **trading dashboards** or **IoT clients**.
 
-IOC (Immediate-or-Cancel)
+✅ Enables **real-time trading UI** integration.
 
-Matches like a limit order.
+---
 
-Any leftover (unfilled) quantity is cancelled, not added to the book.
+## 6. Best Bid/Offer (BBO)
+- `get_bbo()` returns:
+  - **Best Bid** → highest buy price.
+  - **Best Ask** → lowest sell price.
 
-FOK (Fill-or-Kill)
+👉 Useful for **market-making strategies** and **UI displays**.
 
-Only executes if the entire order can be filled immediately.
+---
 
-Otherwise, it is cancelled entirely.
+## 7. Scalability & Efficiency
+- **SortedDict** → keeps prices always sorted for fast best-price lookup.
+- **Deque** → ensures **O(1)** FIFO execution within each price level.
+- **Async I/O (async/await)** → allows handling multiple WebSocket clients concurrently with low latency.
 
-4. Trade Execution Flow
+---
 
-Add Order (add_order)
-
-Routes to _match_market, _match_limit, or _can_fully_match.
-
-Matches orders until filled or no more liquidity.
-
-Records trades via _record_trade.
-
-Record Trade (_record_trade)
-
-Creates a Trade object (price, qty, maker/taker IDs, side).
-
-Appends to trade history.
-
-Broadcasts trade to trade_clients over WebSocket.
-
-Maintain Book (_add_to_book)
-
-If order not fully filled, adds remaining quantity to bids/asks.
-
-Stored under the price level with FIFO queue (deque).
-
-5. Market Data Broadcasting
-
-Order Book Depth (broadcast_market_depth)
-
-Builds top-N snapshot (bids/asks up to depth=10).
-
-Sends JSON updates over WebSocket to subscribed market clients.
-
-Trades (broadcast_trade)
-
-Broadcasts trade execution events in real time to trade clients.
-
-✅ This makes the engine usable for real-time trading UIs or IoT clients (which fits Grid OS’s IoT theme).
-
-6. Best Bid/Offer (BBO)
-
-get_bbo() returns best bid (highest buy) and best ask (lowest sell).
-
-Useful for market-making and UI displays.
-
-7. Scalability / Efficiency
-
-Uses SortedDict → ensures order prices are always sorted.
-
-Uses deque → O(1) FIFO execution within price levels.
-
-Async functions (async def) → multiple clients handled concurrently via WebSockets.
