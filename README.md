@@ -80,14 +80,17 @@ A **high-performance cryptocurrency order matching engine** built with **FastAPI
 }
 ```
 
-🔹 WebSocket Endpoints
-
-/ws/market/{symbol}	Subscribe to market depth
-/ws/trades/{symbol}	Subscribe to trade feed
-
-Sample Trade Broadcast:
 
 
+### 🔹 WebSocket Endpoints
+
+| Endpoint                  | Description               |
+|---------------------------|---------------------------|
+| `/ws/market/{symbol}`     | Subscribe to market depth |
+| `/ws/trades/{symbol}`     | Subscribe to trade feed   |
+
+**Sample Trade Broadcast**
+```json
 {
   "type": "trade",
   "data": {
@@ -100,8 +103,7 @@ Sample Trade Broadcast:
     "taker_order_id": "xyz789"
   }
 }
-
-
+```
 
 ⚖️ Trade-off Decisions
 Decision	Trade-offs
