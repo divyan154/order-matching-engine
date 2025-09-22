@@ -78,7 +78,7 @@ A **high-performance cryptocurrency order matching engine** built with **FastAPI
   "price": 25000,
   "quantity": 1
 }
-
+```
 
 🔹 WebSocket Endpoints
 
