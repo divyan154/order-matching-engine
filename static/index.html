@@ -104,7 +104,7 @@
         timestamp: new Date().toISOString()
       };
 
-      const res = await fetch("/submit_order", {
+      const res = await fetch("/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(order)

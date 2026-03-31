@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pydantic[email]
+pydantic-settings
+sortedcontainers
+asyncpg
+python-jose[cryptography]
+bcrypt
+python-multipart
+httpx
+pytest
+pytest-asyncio

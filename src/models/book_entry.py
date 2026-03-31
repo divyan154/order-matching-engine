@@ -6,3 +6,4 @@ class OrderBookEntry(BaseModel):
     order_id: str
     quantity: float
     timestamp: datetime
+    user_id: str | None = None
