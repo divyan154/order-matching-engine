@@ -32,50 +32,151 @@ export default function AuthModal({ onSuccess, onClose }: Props) {
     }
   }
 
+  const inputStyle: React.CSSProperties = {
+    background: "var(--bg-base)",
+    border: "1px solid var(--border)",
+    color: "var(--text-primary)",
+    borderRadius: "8px",
+    outline: "none",
+    width: "100%",
+    padding: "11px 12px",
+    fontSize: "14px",
+    transition: "border-color 0.15s",
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-xl p-6 w-full max-w-sm border border-gray-700">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-white font-semibold">{mode === "login" ? "Login" : "Sign Up"}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50"
+      style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)" }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        style={{
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border)",
+          borderRadius: "16px",
+          width: "100%",
+          maxWidth: "360px",
+          boxShadow: "0 24px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03)",
+          overflow: "hidden",
+        }}
+      >
+        {/* Modal header */}
+        <div
+          style={{ borderBottom: "1px solid var(--border)", padding: "16px 20px" }}
+          className="flex items-center justify-between"
+        >
+          <div>
+            <div
+              style={{
+                background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+              className="font-bold text-sm"
+            >
+              CryptoEngine
+            </div>
+            <div className="text-base font-semibold text-white mt-0.5">
+              {mode === "login" ? "Welcome back" : "Create account"}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: "var(--bg-base)",
+              border: "1px solid var(--border)",
+              color: "var(--text-secondary)",
+              borderRadius: "8px",
+              width: "32px",
+              height: "32px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              fontSize: "16px",
+            }}
+          >
+            ✕
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full bg-gray-800 text-white px-3 py-2 rounded text-sm border border-gray-700 focus:outline-none focus:border-blue-500"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full bg-gray-800 text-white px-3 py-2 rounded text-sm border border-gray-700 focus:outline-none focus:border-blue-500"
-          />
-          {error && <p className="text-red-400 text-xs">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm font-medium disabled:opacity-50"
-          >
-            {loading ? "..." : mode === "login" ? "Login" : "Create Account"}
-          </button>
-        </form>
+        <div style={{ padding: "20px" }}>
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={inputStyle}
+              onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
+              onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={inputStyle}
+              onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
+              onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+            />
 
-        <p className="text-gray-400 text-xs text-center mt-3">
-          {mode === "login" ? "No account?" : "Have an account?"}{" "}
-          <button
-            onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); }}
-            className="text-blue-400 hover:underline"
-          >
-            {mode === "login" ? "Sign up" : "Login"}
-          </button>
-        </p>
+            {error && (
+              <div
+                style={{
+                  background: "rgba(239,68,68,0.08)",
+                  border: "1px solid rgba(239,68,68,0.25)",
+                  borderRadius: "6px",
+                  padding: "8px 10px",
+                  color: "var(--red)",
+                  fontSize: "12px",
+                }}
+              >
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                background: loading
+                  ? "rgba(59,130,246,0.3)"
+                  : "linear-gradient(135deg, #3b82f6, #6366f1)",
+                boxShadow: loading ? "none" : "0 4px 14px rgba(99,102,241,0.3)",
+                borderRadius: "8px",
+                color: "white",
+                width: "100%",
+                padding: "12px",
+                fontSize: "14px",
+                fontWeight: "600",
+                border: "none",
+                cursor: loading ? "not-allowed" : "pointer",
+                transition: "all 0.15s",
+                marginTop: "4px",
+              }}
+            >
+              {loading ? "..." : mode === "login" ? "Sign in" : "Create Account"}
+            </button>
+          </form>
+
+          <p className="text-center mt-4 text-xs" style={{ color: "var(--text-secondary)" }}>
+            {mode === "login" ? "Don't have an account?" : "Already have an account?"}{" "}
+            <button
+              onClick={() => {
+                setMode(mode === "login" ? "signup" : "login");
+                setError("");
+              }}
+              style={{ color: "var(--accent)", background: "none", border: "none", cursor: "pointer" }}
+              className="hover:underline font-medium"
+            >
+              {mode === "login" ? "Sign up" : "Sign in"}
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   );

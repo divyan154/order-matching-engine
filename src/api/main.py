@@ -96,7 +96,11 @@ app = FastAPI(title="Order Matching Engine", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://order-engine-frontend-production.up.railway.app"],  # tighten in production
+    allow_origins=[
+        "https://order-engine-frontend-production.up.railway.app",
+        "http://localhost:3000",
+        "http://localhost:3001",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )

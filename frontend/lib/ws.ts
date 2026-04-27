@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { getOrderBook, getTrades } from "./api";
 
 const WS_BASE =
   typeof window !== "undefined"
@@ -18,9 +19,9 @@ export interface TradeData {
   quantity: number;
   symbol: string;
   timestamp: string;
-  aggressor_side: string;
-  maker_order_id: string;
-  taker_order_id: string;
+  aggressor_side?: string;
+  maker_order_id?: string;
+  taker_order_id?: string;
 }
 
 export function useMarketDepth(symbol: string) {
@@ -28,6 +29,10 @@ export function useMarketDepth(symbol: string) {
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
+    setDepth({ symbol, bids: [], asks: [], timestamp: "" });
+
+    getOrderBook(symbol).then((data) => setDepth(data)).catch(() => {});
+
     const ws = new WebSocket(`${WS_BASE}/ws/market/${symbol}`);
     wsRef.current = ws;
 
@@ -48,6 +53,10 @@ export function useTradeFeed(symbol: string) {
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
+    setTrades([]);
+
+    getTrades(symbol).then((data) => setTrades(data)).catch(() => {});
+
     const ws = new WebSocket(`${WS_BASE}/ws/trades/${symbol}`);
     wsRef.current = ws;
 

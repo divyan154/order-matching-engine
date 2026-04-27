@@ -5,52 +5,137 @@ import { useMarketDepth } from "@/lib/ws";
 export default function OrderBook({ symbol }: { symbol: string }) {
   const depth = useMarketDepth(symbol);
 
-  const asks = [...depth.asks].reverse().slice(0, 10);
-  const bids = depth.bids.slice(0, 10);
+  const asks = [...depth.asks].reverse().slice(0, 12);
+  const bids = depth.bids.slice(0, 12);
+
+  const allQtys = [
+    ...asks.map(([, q]) => parseFloat(q)),
+    ...bids.map(([, q]) => parseFloat(q)),
+  ];
+  const maxQty = allQtys.length > 0 ? Math.max(...allQtys) : 1;
+
+  const spread =
+    depth.bids[0] && depth.asks[0]
+      ? (parseFloat(depth.asks[0][0]) - parseFloat(depth.bids[0][0])).toFixed(2)
+      : null;
 
   return (
-    <div className="bg-gray-900 rounded-lg p-4 w-full">
-      <h2 className="text-white font-semibold text-sm mb-3">Order Book · {symbol}</h2>
-
-      <div className="flex justify-between text-xs text-gray-500 mb-1 px-1">
-        <span>Price</span>
-        <span>Quantity</span>
+    <div
+      style={{
+        background: "var(--bg-surface)",
+        border: "1px solid var(--border)",
+        borderRadius: "12px",
+      }}
+      className="w-full overflow-hidden"
+    >
+      <div
+        style={{ borderBottom: "1px solid var(--border)" }}
+        className="px-4 py-3 flex items-center justify-between"
+      >
+        <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "var(--text-secondary)" }}>
+          Order Book
+        </span>
+        <span className="text-xs font-mono font-medium" style={{ color: "var(--text-secondary)" }}>
+          {symbol}
+        </span>
       </div>
 
-      {/* Asks — red, lowest ask at bottom */}
-      <div className="mb-1">
-        {asks.length === 0 ? (
-          <div className="text-gray-600 text-xs text-center py-2">No asks</div>
-        ) : (
-          asks.map(([price, qty], i) => (
-            <div key={i} className="flex justify-between text-xs py-0.5 px-1 hover:bg-gray-800">
-              <span className="text-red-400 font-mono">{parseFloat(price).toLocaleString()}</span>
-              <span className="text-gray-300 font-mono">{parseFloat(qty).toFixed(4)}</span>
+      <div className="px-3 py-1">
+        {/* Column headers */}
+        <div className="flex justify-between text-xs px-1 py-1.5" style={{ color: "var(--text-secondary)" }}>
+          <span>Price (USDT)</span>
+          <span>Amount</span>
+        </div>
+
+        {/* Asks */}
+        <div className="mb-0.5">
+          {asks.length === 0 ? (
+            <div className="text-center py-4 text-xs" style={{ color: "var(--text-muted)" }}>
+              No asks
             </div>
-          ))
-        )}
-      </div>
+          ) : (
+            asks.map(([price, qty], i) => {
+              const pct = (parseFloat(qty) / maxQty) * 100;
+              return (
+                <div
+                  key={i}
+                  className="relative flex justify-between text-xs py-0.5 px-1 rounded"
+                  style={{ overflow: "hidden" }}
+                >
+                  <div
+                    className="absolute inset-y-0 right-0"
+                    style={{
+                      width: `${pct}%`,
+                      background: "var(--red-dim)",
+                    }}
+                  />
+                  <span className="relative font-mono" style={{ color: "var(--red)" }}>
+                    {parseFloat(price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <span className="relative font-mono" style={{ color: "var(--text-primary)" }}>
+                    {parseFloat(qty).toFixed(4)}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
 
-      {/* Spread */}
-      <div className="border-t border-b border-gray-700 py-1 px-1 text-xs text-gray-400 text-center my-1">
-        {depth.bids[0] && depth.asks[0]
-          ? `Spread: ${(parseFloat(depth.asks[0][0]) - parseFloat(depth.bids[0][0])).toFixed(2)}`
-          : "—"}
-      </div>
+        {/* Spread */}
+        <div
+          style={{ borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}
+          className="py-1.5 px-1 my-0.5 flex items-center justify-center gap-2"
+        >
+          {spread !== null ? (
+            <>
+              <span className="text-xs font-mono font-semibold" style={{ color: "var(--accent)" }}>
+                {spread}
+              </span>
+              <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                spread
+              </span>
+            </>
+          ) : (
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>—</span>
+          )}
+        </div>
 
-      {/* Bids — green */}
-      <div className="mt-1">
-        {bids.length === 0 ? (
-          <div className="text-gray-600 text-xs text-center py-2">No bids</div>
-        ) : (
-          bids.map(([price, qty], i) => (
-            <div key={i} className="flex justify-between text-xs py-0.5 px-1 hover:bg-gray-800">
-              <span className="text-green-400 font-mono">{parseFloat(price).toLocaleString()}</span>
-              <span className="text-gray-300 font-mono">{parseFloat(qty).toFixed(4)}</span>
+        {/* Bids */}
+        <div className="mt-0.5">
+          {bids.length === 0 ? (
+            <div className="text-center py-4 text-xs" style={{ color: "var(--text-muted)" }}>
+              No bids
             </div>
-          ))
-        )}
+          ) : (
+            bids.map(([price, qty], i) => {
+              const pct = (parseFloat(qty) / maxQty) * 100;
+              return (
+                <div
+                  key={i}
+                  className="relative flex justify-between text-xs py-0.5 px-1 rounded"
+                  style={{ overflow: "hidden" }}
+                >
+                  <div
+                    className="absolute inset-y-0 right-0"
+                    style={{
+                      width: `${pct}%`,
+                      background: "var(--green-dim)",
+                    }}
+                  />
+                  <span className="relative font-mono" style={{ color: "var(--green)" }}>
+                    {parseFloat(price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <span className="relative font-mono" style={{ color: "var(--text-primary)" }}>
+                    {parseFloat(qty).toFixed(4)}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
+
+      <div className="pb-2" />
     </div>
   );
 }

@@ -10,6 +10,13 @@ interface Props {
   onOrderPlaced: () => void;
 }
 
+const ORDER_TYPES = [
+  { value: "limit", label: "Limit" },
+  { value: "market", label: "Market" },
+  { value: "ioc", label: "IOC" },
+  { value: "fok", label: "FOK" },
+];
+
 export default function TradingPanel({ symbol, onAuthRequired, onOrderPlaced }: Props) {
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [type, setType] = useState("limit");
@@ -37,7 +44,7 @@ export default function TradingPanel({ symbol, onAuthRequired, onOrderPlaced }: 
         quantity: parseFloat(quantity),
       });
       const filled = result.trades_executed;
-      setMessage({ text: `Order placed. ${filled} trade(s) executed.`, ok: true });
+      setMessage({ text: `Order placed · ${filled} trade(s) executed`, ok: true });
       setQuantity("");
       setPrice("");
       onOrderPlaced();
@@ -48,80 +55,223 @@ export default function TradingPanel({ symbol, onAuthRequired, onOrderPlaced }: 
     }
   }
 
-  return (
-    <div className="bg-gray-900 rounded-lg p-4 w-full">
-      <h2 className="text-white font-semibold text-sm mb-3">Place Order · {symbol}</h2>
+  const isBuy = side === "buy";
 
-      {/* Buy / Sell tabs */}
-      <div className="flex mb-4 rounded overflow-hidden border border-gray-700">
-        <button
-          onClick={() => setSide("buy")}
-          className={`flex-1 py-2 text-sm font-medium ${side === "buy" ? "bg-green-600 text-white" : "text-gray-400 hover:bg-gray-800"}`}
-        >
-          Buy
-        </button>
-        <button
-          onClick={() => setSide("sell")}
-          className={`flex-1 py-2 text-sm font-medium ${side === "sell" ? "bg-red-600 text-white" : "text-gray-400 hover:bg-gray-800"}`}
-        >
-          Sell
-        </button>
+  return (
+    <div
+      style={{
+        background: "var(--bg-surface)",
+        border: "1px solid var(--border)",
+        borderRadius: "12px",
+        overflow: "hidden",
+      }}
+      className="w-full"
+    >
+      <div
+        style={{ borderBottom: "1px solid var(--border)" }}
+        className="px-4 py-3 flex items-center justify-between"
+      >
+        <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "var(--text-secondary)" }}>
+          Place Order
+        </span>
+        <span className="text-xs font-mono font-medium" style={{ color: "var(--text-secondary)" }}>
+          {symbol}
+        </span>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
-        {/* Order type */}
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          className="w-full bg-gray-800 text-white px-3 py-2 rounded text-sm border border-gray-700 focus:outline-none focus:border-blue-500"
+      <div className="p-4">
+        {/* Buy / Sell tabs */}
+        <div
+          style={{ background: "var(--bg-base)", borderRadius: "8px", padding: "3px" }}
+          className="flex mb-4"
         >
-          <option value="limit">Limit</option>
-          <option value="market">Market</option>
-          <option value="ioc">IOC</option>
-          <option value="fok">FOK</option>
-        </select>
+          <button
+            onClick={() => setSide("buy")}
+            style={
+              isBuy
+                ? {
+                    background: "linear-gradient(135deg, #16a34a, #22c55e)",
+                    color: "white",
+                    boxShadow: "0 2px 8px rgba(34,197,94,0.3)",
+                    borderRadius: "6px",
+                  }
+                : {
+                    color: "var(--text-secondary)",
+                    background: "transparent",
+                    borderRadius: "6px",
+                  }
+            }
+            className="flex-1 py-2 text-sm font-semibold transition-all duration-150"
+          >
+            Buy
+          </button>
+          <button
+            onClick={() => setSide("sell")}
+            style={
+              !isBuy
+                ? {
+                    background: "linear-gradient(135deg, #dc2626, #ef4444)",
+                    color: "white",
+                    boxShadow: "0 2px 8px rgba(239,68,68,0.3)",
+                    borderRadius: "6px",
+                  }
+                : {
+                    color: "var(--text-secondary)",
+                    background: "transparent",
+                    borderRadius: "6px",
+                  }
+            }
+            className="flex-1 py-2 text-sm font-semibold transition-all duration-150"
+          >
+            Sell
+          </button>
+        </div>
 
-        {/* Price — hidden for market */}
-        {type !== "market" && (
-          <input
-            type="number"
-            placeholder="Price"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            required
-            min="0"
-            step="any"
-            className="w-full bg-gray-800 text-white px-3 py-2 rounded text-sm border border-gray-700 focus:outline-none focus:border-blue-500"
-          />
-        )}
+        {/* Order type pills */}
+        <div className="flex gap-1.5 mb-4">
+          {ORDER_TYPES.map((ot) => (
+            <button
+              key={ot.value}
+              onClick={() => setType(ot.value)}
+              style={
+                type === ot.value
+                  ? {
+                      background: "var(--accent-glow)",
+                      color: "#93c5fd",
+                      border: "1px solid rgba(59,130,246,0.4)",
+                      borderRadius: "6px",
+                    }
+                  : {
+                      background: "var(--bg-base)",
+                      color: "var(--text-secondary)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "6px",
+                    }
+              }
+              className="flex-1 py-1 text-xs font-medium transition-all duration-150"
+            >
+              {ot.label}
+            </button>
+          ))}
+        </div>
 
-        <input
-          type="number"
-          placeholder="Quantity"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          required
-          min="0"
-          step="any"
-          className="w-full bg-gray-800 text-white px-3 py-2 rounded text-sm border border-gray-700 focus:outline-none focus:border-blue-500"
-        />
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {type !== "market" && (
+            <div>
+              <label className="block text-xs mb-1.5" style={{ color: "var(--text-secondary)" }}>
+                Price (USDT)
+              </label>
+              <input
+                type="number"
+                placeholder="0.00"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                required
+                min="0"
+                step="any"
+                style={{
+                  background: "var(--bg-base)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-primary)",
+                  borderRadius: "8px",
+                  outline: "none",
+                  width: "100%",
+                  padding: "10px 12px",
+                  fontSize: "13px",
+                  fontFamily: "var(--font-mono)",
+                  transition: "border-color 0.15s",
+                }}
+                onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
+                onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+              />
+            </div>
+          )}
 
-        {message && (
-          <p className={`text-xs ${message.ok ? "text-green-400" : "text-red-400"}`}>
-            {message.text}
-          </p>
-        )}
+          <div>
+            <label className="block text-xs mb-1.5" style={{ color: "var(--text-secondary)" }}>
+              Amount ({symbol.replace("USDT", "")})
+            </label>
+            <input
+              type="number"
+              placeholder="0.0000"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              required
+              min="0"
+              step="any"
+              style={{
+                background: "var(--bg-base)",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
+                borderRadius: "8px",
+                outline: "none",
+                width: "100%",
+                padding: "10px 12px",
+                fontSize: "13px",
+                fontFamily: "var(--font-mono)",
+                transition: "border-color 0.15s",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
+              onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+            />
+          </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full py-2 rounded text-sm font-medium text-white disabled:opacity-50 ${
-            side === "buy" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"
-          }`}
-        >
-          {loading ? "Placing..." : `${side === "buy" ? "Buy" : "Sell"} ${symbol}`}
-        </button>
-      </form>
+          {message && (
+            <div
+              style={{
+                background: message.ok ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)",
+                border: `1px solid ${message.ok ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)"}`,
+                borderRadius: "6px",
+                padding: "8px 10px",
+                color: message.ok ? "var(--green)" : "var(--red)",
+              }}
+              className="text-xs"
+            >
+              {message.text}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={
+              isBuy
+                ? {
+                    background: loading
+                      ? "rgba(34,197,94,0.3)"
+                      : "linear-gradient(135deg, #16a34a, #22c55e)",
+                    boxShadow: loading ? "none" : "0 4px 14px rgba(34,197,94,0.25)",
+                    borderRadius: "8px",
+                    color: "white",
+                    width: "100%",
+                    padding: "11px",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    border: "none",
+                    cursor: loading ? "not-allowed" : "pointer",
+                    transition: "all 0.15s",
+                  }
+                : {
+                    background: loading
+                      ? "rgba(239,68,68,0.3)"
+                      : "linear-gradient(135deg, #dc2626, #ef4444)",
+                    boxShadow: loading ? "none" : "0 4px 14px rgba(239,68,68,0.25)",
+                    borderRadius: "8px",
+                    color: "white",
+                    width: "100%",
+                    padding: "11px",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    border: "none",
+                    cursor: loading ? "not-allowed" : "pointer",
+                    transition: "all 0.15s",
+                  }
+            }
+          >
+            {loading ? "Placing..." : `${isBuy ? "Buy" : "Sell"} ${symbol.replace("USDT", "")}`}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
