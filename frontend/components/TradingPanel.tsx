@@ -148,7 +148,7 @@ export default function TradingPanel({ symbol, onAuthRequired, onOrderPlaced }: 
                       borderRadius: "6px",
                     }
               }
-              className="flex-1 py-1 text-xs font-medium transition-all duration-150"
+              className="flex-1 py-2 text-xs font-medium transition-all duration-150"
             >
               {ot.label}
             </button>
