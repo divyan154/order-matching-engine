@@ -63,14 +63,14 @@ export default function Home() {
       </div>
 
       {/* Main layout */}
-      <main className="grid grid-cols-12 gap-3 p-4">
-        <div className="col-span-3">
+      <main className="grid grid-cols-1 md:grid-cols-12 gap-3 p-4">
+        <div className="md:col-span-3">
           <OrderBook symbol={symbol} />
         </div>
-        <div className="col-span-5">
+        <div className="md:col-span-5">
           <TradeHistory symbol={symbol} />
         </div>
-        <div className="col-span-4">
+        <div className="md:col-span-4">
           <TradingPanel
             symbol={symbol}
             onAuthRequired={() => setShowAuth(true)}
